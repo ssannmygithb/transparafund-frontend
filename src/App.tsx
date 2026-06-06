@@ -37,7 +37,7 @@ function CampaignCard({ id }: { id: number }) {
     manager,
     title,
     targetAmount,
-    deadline,
+    ,
     totalCollected,
     donorsCount,
     numProposals,
