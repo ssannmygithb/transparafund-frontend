@@ -13,6 +13,114 @@ import {
   TRANSPARAFUND_ABI,
 } from "./contracts/TransparaFund";
 
+// KOMPONEN BARU: Mengambil detail proposal per individu
+function ProposalItem({
+  campaignId,
+  proposalIndex,
+  isManager,
+}: {
+  campaignId: number;
+  proposalIndex: number;
+  isManager: boolean;
+}) {
+  const { address } = useAccount();
+  const { writeContract, isPending } = useWriteContract();
+
+  // Memanggil fungsi baru di Smart Contract
+  const { data: proposalData } = useReadContract({
+    address: TRANSPARAFUND_ADDRESS as `0x${string}`,
+    abi: TRANSPARAFUND_ABI,
+    functionName: "getProposal",
+    args: [BigInt(campaignId), BigInt(proposalIndex)],
+  });
+
+  if (!proposalData)
+    return (
+      <div className="animate-pulse bg-slate-200 h-32 w-[260px] rounded-xl flex-shrink-0"></div>
+    );
+
+  const [description, amount, recipient, isCompleted, approvalCount] =
+    proposalData as any;
+
+  return (
+    <div className="flex-shrink-0 w-[260px] snap-center bg-white border border-slate-200 p-4 rounded-xl flex flex-col justify-between shadow-sm">
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            Proposal #{proposalIndex + 1}
+          </span>
+          {isCompleted && (
+            <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
+              Tercairkan
+            </span>
+          )}
+        </div>
+
+        <p className="text-sm font-bold text-slate-800 mb-1 leading-tight">
+          {description}
+        </p>
+
+        <p className="text-xs font-medium text-slate-500 mb-3 border-b border-slate-100 pb-3">
+          Nilai:{" "}
+          <span className="font-mono text-[#3b82f6] font-bold">
+            {formatEther(amount)} ETH
+          </span>
+        </p>
+
+        <div className="text-[10px] text-slate-500 mb-3 flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+          <span>Total Setuju:</span>
+          <span className="font-bold text-slate-700">
+            {approvalCount.toString()} Suara
+          </span>
+        </div>
+      </div>
+
+      {/* Tombol Berubah Tergantung Status */}
+      {!isCompleted ? (
+        isManager ? (
+          <button
+            onClick={() =>
+              writeContract({
+                address: TRANSPARAFUND_ADDRESS as `0x${string}`,
+                abi: TRANSPARAFUND_ABI,
+                functionName: "cairkanDana",
+                args: [BigInt(campaignId), BigInt(proposalIndex)],
+              })
+            }
+            disabled={isPending}
+            className="w-full text-white bg-slate-800 hover:bg-slate-900 px-3 py-2 rounded-lg text-sm font-bold transition-colors"
+          >
+            Eksekusi Pencairan
+          </button>
+        ) : (
+          <button
+            onClick={() =>
+              writeContract({
+                address: TRANSPARAFUND_ADDRESS as `0x${string}`,
+                abi: TRANSPARAFUND_ABI,
+                functionName: "setujuiProposal",
+                args: [BigInt(campaignId), BigInt(proposalIndex)],
+              })
+            }
+            disabled={isPending}
+            className="w-full text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/20 px-3 py-2 rounded-lg text-sm font-bold transition-colors"
+          >
+            Beri Suara
+          </button>
+        )
+      ) : (
+        <button
+          disabled
+          className="w-full text-slate-400 bg-slate-100 px-3 py-2 rounded-lg text-sm font-bold cursor-not-allowed"
+        >
+          Selesai
+        </button>
+      )}
+    </div>
+  );
+}
+
+// KOMPONEN UTAMA (Sama seperti sebelumnya)
 function CampaignCard({ id }: { id: number }) {
   const { address } = useAccount();
   const { writeContract, isPending } = useWriteContract();
@@ -42,6 +150,7 @@ function CampaignCard({ id }: { id: number }) {
     donorsCount,
     numProposals,
   ] = campaignData as any;
+
   const targetEth = formatEther(targetAmount);
   const terkumpulEth = formatEther(totalCollected);
   const persentase = Math.min(
@@ -94,7 +203,7 @@ function CampaignCard({ id }: { id: number }) {
           </button>
         ) : (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-            {/* Area Interaksi (Donasi) */}
+            {/* Area Donasi */}
             <div className="bg-[#f0f9ff] p-4 rounded-2xl">
               <h4 className="text-sm font-bold text-[#0284c7] mb-2">
                 Donasi ke Kampanye
@@ -126,7 +235,7 @@ function CampaignCard({ id }: { id: number }) {
               </div>
             </div>
 
-            {/* Area Pengelola */}
+            {/* Area Manager (Bikin Proposal) */}
             {isManager && (
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
                 <h4 className="text-sm font-bold text-slate-800 mb-2">
@@ -137,7 +246,7 @@ function CampaignCard({ id }: { id: number }) {
                     type="text"
                     value={deskripsiProposal}
                     onChange={(e) => setDeskripsiProposal(e.target.value)}
-                    placeholder="Tujuan (Beli Material)"
+                    placeholder="Tujuan (Cth: Beli Material)"
                     className="input-modern bg-white py-3 shadow-sm"
                   />
                   <div className="flex gap-2">
@@ -180,39 +289,22 @@ function CampaignCard({ id }: { id: number }) {
               </div>
             )}
 
-            {/* Area Transparansi */}
+            {/* AREA DAFTAR PROPOSAL AKTIF */}
             <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
               <h4 className="text-sm font-bold text-slate-800 mb-3">
-                Daftar Proposal Aktif ({Number(numProposals)})
+                Daftar Proposal ({Number(numProposals)})
               </h4>
 
               {Number(numProposals) > 0 ? (
-                <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x">
+                <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x bg-[#f4f7fe] p-4 rounded-xl">
                   {Array.from({ length: Number(numProposals) }).map(
                     (_, index) => (
-                      <div
+                      <ProposalItem
                         key={index}
-                        className="flex-shrink-0 w-[240px] snap-center bg-[#f4f7fe] p-4 rounded-xl flex flex-col justify-between"
-                      >
-                        <span className="text-sm font-bold text-slate-700 mb-3 block border-b border-slate-200 pb-2">
-                          Proposal #{index + 1}
-                        </span>
-
-                        <button
-                          onClick={() =>
-                            writeContract({
-                              address: TRANSPARAFUND_ADDRESS as `0x${string}`,
-                              abi: TRANSPARAFUND_ABI,
-                              functionName: "setujuiProposal",
-                              args: [BigInt(id), BigInt(index)],
-                            })
-                          }
-                          disabled={isPending}
-                          className="w-full text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/20 px-3 py-2 rounded-lg text-sm font-bold transition-colors"
-                        >
-                          Beri Suara
-                        </button>
-                      </div>
+                        campaignId={id}
+                        proposalIndex={index}
+                        isManager={isManager}
+                      />
                     ),
                   )}
                 </div>
@@ -236,7 +328,7 @@ function CampaignCard({ id }: { id: number }) {
   );
 }
 
-// --- HALAMAN UTAMA ---
+// HALAMAN UTAMA
 export default function App() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
@@ -267,7 +359,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f7fe]">
-      {/* Header / Navbar */}
       <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-100">
         <div className="max-w-md md:max-w-5xl mx-auto px-4 md:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -302,7 +393,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Konten Utama */}
       <main className="flex-grow max-w-md md:max-w-5xl mx-auto px-4 md:px-8 pt-8 pb-16">
         <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-2">
@@ -403,7 +493,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-100 py-8 mt-auto">
         <div className="max-w-md md:max-w-5xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
@@ -414,12 +503,10 @@ export default function App() {
               TransparaFund
             </span>
           </div>
-
           <p className="text-xs text-slate-400 text-center md:text-left font-medium">
             &copy; {new Date().getFullYear()} TransparaFund. Berjalan aman di
             Ethereum Sepolia Testnet.
           </p>
-
           <div className="flex items-center gap-4 text-xs font-bold">
             <a
               href={`https://sepolia.etherscan.io/address/${TRANSPARAFUND_ADDRESS}`}
@@ -431,7 +518,7 @@ export default function App() {
             </a>
             <span className="text-slate-200">|</span>
             <span className="text-[#10b981] bg-[#10b981]/10 px-2.5 py-1 rounded-full text-[10px] tracking-wider uppercase">
-              v1.0.0 MVP
+              v1.1.0 MVP
             </span>
           </div>
         </div>
