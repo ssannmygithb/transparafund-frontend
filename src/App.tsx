@@ -119,7 +119,7 @@ function CampaignCard({ id }: { id: number }) {
                     })
                   }
                   disabled={isPending}
-                  className="bg-[#0284c7] text-white px-4 rounded-2xl font-bold"
+                  className="bg-[#0284c7] text-white px-4 rounded-2xl font-bold hover:bg-[#0369a1] transition-colors"
                 >
                   Kirim
                 </button>
@@ -172,7 +172,7 @@ function CampaignCard({ id }: { id: number }) {
                       })
                     }
                     disabled={isPending}
-                    className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm"
+                    className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold text-sm transition-colors"
                   >
                     Ajukan Proposal
                   </button>
@@ -182,35 +182,50 @@ function CampaignCard({ id }: { id: number }) {
 
             {/* Area Transparansi */}
             <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
-              <h4 className="text-sm font-bold text-slate-800 mb-2">
+              <h4 className="text-sm font-bold text-slate-800 mb-3">
                 Daftar Proposal Aktif ({Number(numProposals)})
               </h4>
-              {Number(numProposals) > 0 && (
-                <div className="flex justify-between items-center bg-[#f4f7fe] p-3 rounded-xl">
-                  <span className="text-sm font-medium text-slate-600">
-                    Proposal #{Number(numProposals) - 1}
-                  </span>
-                  <button
-                    onClick={() =>
-                      writeContract({
-                        address: TRANSPARAFUND_ADDRESS as `0x${string}`,
-                        abi: TRANSPARAFUND_ABI,
-                        functionName: "setujuiProposal",
-                        args: [BigInt(id), BigInt(Number(numProposals) - 1)],
-                      })
-                    }
-                    disabled={isPending}
-                    className="text-[#10b981] bg-[#10b981]/10 px-3 py-1.5 rounded-lg text-sm font-bold"
-                  >
-                    Beri Suara
-                  </button>
+
+              {Number(numProposals) > 0 ? (
+                <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x">
+                  {Array.from({ length: Number(numProposals) }).map(
+                    (_, index) => (
+                      <div
+                        key={index}
+                        className="flex-shrink-0 w-[240px] snap-center bg-[#f4f7fe] p-4 rounded-xl flex flex-col justify-between"
+                      >
+                        <span className="text-sm font-bold text-slate-700 mb-3 block border-b border-slate-200 pb-2">
+                          Proposal #{index + 1}
+                        </span>
+
+                        <button
+                          onClick={() =>
+                            writeContract({
+                              address: TRANSPARAFUND_ADDRESS as `0x${string}`,
+                              abi: TRANSPARAFUND_ABI,
+                              functionName: "setujuiProposal",
+                              args: [BigInt(id), BigInt(index)],
+                            })
+                          }
+                          disabled={isPending}
+                          className="w-full text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/20 px-3 py-2 rounded-lg text-sm font-bold transition-colors"
+                        >
+                          Beri Suara
+                        </button>
+                      </div>
+                    ),
+                  )}
                 </div>
+              ) : (
+                <p className="text-xs text-slate-400 font-medium text-center py-2">
+                  Belum ada proposal diajukan.
+                </p>
               )}
             </div>
 
             <button
               onClick={() => setBukaDetail(false)}
-              className="w-full text-slate-400 font-medium text-sm py-2"
+              className="w-full text-slate-400 font-medium text-sm py-2 hover:text-slate-600 transition-colors"
             >
               Tutup
             </button>
@@ -279,7 +294,7 @@ export default function App() {
           ) : (
             <button
               onClick={() => connect({ connector: metaMask() })}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md transition-colors"
             >
               Connect Wallet
             </button>
@@ -388,7 +403,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- BAGIAN FOOTER BARU --- */}
+      {/* Footer */}
       <footer className="bg-white border-t border-slate-100 py-8 mt-auto">
         <div className="max-w-md md:max-w-5xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
