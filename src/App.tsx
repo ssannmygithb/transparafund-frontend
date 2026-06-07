@@ -23,7 +23,7 @@ function ProposalItem({
   proposalIndex: number;
   isManager: boolean;
 }) {
-  const { address } = useAccount();
+  const {} = useAccount();
   const { writeContract, isPending } = useWriteContract();
 
   // Memanggil fungsi baru di Smart Contract
@@ -39,7 +39,7 @@ function ProposalItem({
       <div className="animate-pulse bg-slate-200 h-32 w-[260px] rounded-xl flex-shrink-0"></div>
     );
 
-  const [description, amount, recipient, isCompleted, approvalCount] =
+  const [description, amount, _, isCompleted, approvalCount] =
     proposalData as any;
 
   return (
